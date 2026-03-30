@@ -7,7 +7,9 @@ const { uploadToDrive, deleteFromDrive } = require('../utils/drive');
 const supabase = require('../utils/supabase');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
-const uploadDir = path.join(__dirname, '..', 'uploads');
+const os = require('os');
+
+const uploadDir = path.join(os.tmpdir(), 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const upload = multer({

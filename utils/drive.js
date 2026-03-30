@@ -9,23 +9,33 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const KEY_PATH = path.join(__dirname, '..', 'service-account.json');
 const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-let authConfig = { scopes: SCOPES };
+let _auth = null;
+let _drive = null;
 
-if (process.env.GOOGLE_CREDENTIALS) {
-  // Try to parse the env var as JSON (for Vercel deployment)
-  try {
-    authConfig.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-  } catch (err) {
-    console.error('Error parsing GOOGLE_CREDENTIALS environment variable. Is it valid JSON?');
+function getDrive() {
+  if (_drive) return _drive;
+
+  let authConfig = { scopes: SCOPES };
+
+  if (process.env.GOOGLE_CREDENTIALS) {
+    try {
+      authConfig.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    } catch (err) {
+      console.error('Error parsing GOOGLE_CREDENTIALS environment variable. Is it valid JSON?');
+      throw new Error('Invalid GOOGLE_CREDENTIALS JSON');
+    }
+  } else {
+    // Fall back to local file (for local development)
+    if (!fs.existsSync(KEY_PATH)) {
+      throw new Error('service-account.json is missing and GOOGLE_CREDENTIALS env var is missing');
+    }
+    authConfig.keyFile = KEY_PATH;
   }
-} else {
-  // Fall back to local file (for local development)
-  authConfig.keyFile = KEY_PATH;
+
+  _auth = new google.auth.GoogleAuth(authConfig);
+  _drive = google.drive({ version: 'v3', auth: _auth });
+  return _drive;
 }
-
-const auth = new google.auth.GoogleAuth(authConfig);
-
-const drive = google.drive({ version: 'v3', auth });
 
 // Cache to prevent looking up the same folder ID twice
 const folderCache = {};
@@ -43,7 +53,7 @@ async function getOrCreateFolder(folderName, parentId) {
   try {
     // 1. Search for existing folder
     const query = `name='${folderName.replace(/'/g, "\\'")}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-    const res = await drive.files.list({
+    const res = await getDrive().files.list({
       q: query,
       fields: 'files(id, name)',
       spaces: 'drive',
@@ -61,7 +71,7 @@ async function getOrCreateFolder(folderName, parentId) {
       parents: [parentId],
     };
     
-    const createRes = await drive.files.create({
+    const createRes = await getDrive().files.create({
       resource: fileMetadata,
       fields: 'id',
     });
@@ -104,14 +114,14 @@ async function uploadToDrive(file, semester, subject, category) {
       body: fs.createReadStream(file.path),
     };
 
-    const response = await drive.files.create({
+    const response = await getDrive().files.create({
       resource: fileMetadata,
       media: media,
       fields: 'id, webViewLink',
     });
 
     // Make file publicly viewable so preview URLs work for students
-    await drive.permissions.create({
+    await getDrive().permissions.create({
       fileId: response.data.id,
       requestBody: {
         role: 'reader',
@@ -143,7 +153,7 @@ async function uploadToDrive(file, semester, subject, category) {
 async function deleteFromDrive(fileId) {
   if (!fileId) return;
   try {
-    await drive.files.delete({ fileId });
+    await getDrive().files.delete({ fileId });
   } catch (error) {
     // 404 means file was already deleted — that's fine
     if (error.code !== 404) {
