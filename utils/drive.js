@@ -9,10 +9,21 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const KEY_PATH = path.join(__dirname, '..', 'service-account.json');
 const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: KEY_PATH,
-  scopes: SCOPES,
-});
+let authConfig = { scopes: SCOPES };
+
+if (process.env.GOOGLE_CREDENTIALS) {
+  // Try to parse the env var as JSON (for Vercel deployment)
+  try {
+    authConfig.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  } catch (err) {
+    console.error('Error parsing GOOGLE_CREDENTIALS environment variable. Is it valid JSON?');
+  }
+} else {
+  // Fall back to local file (for local development)
+  authConfig.keyFile = KEY_PATH;
+}
+
+const auth = new google.auth.GoogleAuth(authConfig);
 
 const drive = google.drive({ version: 'v3', auth });
 
