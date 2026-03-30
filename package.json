@@ -1,0 +1,30 @@
+{
+  "name": "cs-portal-backend",
+  "version": "3.0.0",
+  "description": "CS Portal Backend — COMSATS University Academic Resource Hub API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "sync": "node scripts/sync-folders.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["comsats", "portal", "academic", "api"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
+    "googleapis": "^171.4.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1"
+  }
+}
