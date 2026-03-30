@@ -51,8 +51,14 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  ╔═══════════════════════════════════════╗`);
-  console.log(`  ║   CS Portal Server v3.0 · Port ${PORT}  ║`);
-  console.log(`  ╚═══════════════════════════════════════╝\n`);
-});
+// Only start the server if not running on Vercel
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n  ╔═══════════════════════════════════════╗`);
+    console.log(`  ║   CS Portal Server v3.0 · Port ${PORT}  ║`);
+    console.log(`  ╚═══════════════════════════════════════╝\n`);
+  });
+}
+
+// Export the Express API for Vercel Serverless Functions
+module.exports = app;
